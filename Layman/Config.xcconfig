@@ -1,0 +1,7 @@
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+SUPABASE_URL = YOUR_SUPABASE_URL_HERE
+SUPABASE_ANON_KEY = YOUR_SUPABASE_ANON_KEY_HERE
+NEWSDATA_API_KEY = YOUR_NEWSDATA_API_KEY_HERE
+GEMINI_API_KEY = YOUR_GEMINI_API_KEY_HERE

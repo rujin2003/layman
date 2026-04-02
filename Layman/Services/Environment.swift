@@ -1,51 +1,11 @@
 import Foundation
 
 public enum Environment {
-    enum Keys {
-        static let supabaseURL = "SUPABASE_URL"
-        static let supabaseAnonKey = "SUPABASE_ANON_KEY"
-        static let newsDataAPIKey = "NEWSDATA_API_KEY"
-        static let geminiAPIKey = "GEMINI_API_KEY"
-    }
-    
-    // Get variables from Info.plist which is populated by Config.xcconfig
-    private static let infoDictionary: [String: Any] = {
-        guard let dict = Bundle.main.infoDictionary else {
-            fatalError("Info.plist file not found")
-        }
-        return dict
-    }()
-    
-    static let supabaseURL: String = {
-        guard let urlString = Environment.infoDictionary[Keys.supabaseURL] as? String else {
-            // Provide a fallback or print warning so the UI components don't crash in preview
-            print("⚠️ Warning: SUPABASE_URL not set in environment or Config.xcconfig")
-            return "https://YOUR_PROJECT_REF.supabase.co"
-        }
-        return urlString
-    }()
-    
-    static let supabaseAnonKey: String = {
-        guard let key = Environment.infoDictionary[Keys.supabaseAnonKey] as? String else {
-            print("⚠️ Warning: SUPABASE_ANON_KEY not set in environment or Config.xcconfig")
-            return "YOUR_SUPABASE_ANON_KEY"
-        }
-        return key
-    }()
-    
-    static let newsDataAPIKey: String = {
-        guard let key = Environment.infoDictionary[Keys.newsDataAPIKey] as? String else {
-            print("⚠️ Warning: NEWSDATA_API_KEY not set in environment or Config.xcconfig")
-            return "YOUR_NEWSDATA_API_KEY"
-        }
-        return key
-    }()
-    
-    static let geminiAPIKey: String = {
-        guard let key = Environment.infoDictionary[Keys.geminiAPIKey] as? String else {
-            print("⚠️ Warning: GEMINI_API_KEY not set in environment or Config.xcconfig")
-            return "YOUR_GEMINI_API_KEY"
-        }
-        return key
-    }()
+    static let supabaseURL = "https://hoikactmxqxioginbsao.supabase.co"
+
+    static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvaWthY3RteHF4aW9naW5ic2FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTcwNDIsImV4cCI6MjA5MDYzMzA0Mn0.Oja-BGANhqqsfPrmEZjSEggDD3o9KCsqHUIpkkmh2Qs"
+
+    static let newsDataAPIKey = "pub_de913d9b49614bdc92584ef6c7e5ff7d"
+
+    static let geminiAPIKey = "AIzaSyAhU8zro-3dNCg7yXpKgrJOcJFP23p0Q9c"
 }

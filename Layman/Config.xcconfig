@@ -1,7 +1,10 @@
 // Configuration settings file format documentation can be found at:
 // https://help.apple.com/xcode/#/dev745c5c974
+//
+// API keys are loaded via Environment.swift for reliability.
+// This file serves as documentation of required configuration.
+// In production, use a proper secrets management approach.
 
-SUPABASE_URL = YOUR_SUPABASE_URL_HERE
-SUPABASE_ANON_KEY = YOUR_SUPABASE_ANON_KEY_HERE
-NEWSDATA_API_KEY = YOUR_NEWSDATA_API_KEY_HERE
-GEMINI_API_KEY = YOUR_GEMINI_API_KEY_HERE
+SUPABASE_URL = hoikactmxqxioginbsao.supabase.co
+NEWSDATA_API_KEY = pub_de913d9b49614bdc92584ef6c7e5ff7d
+GEMINI_API_KEY = AIzaSyAhU8zro-3dNCg7yXpKgrJOcJFP23p0Q9c

@@ -2,52 +2,95 @@ import Foundation
 import Combine
 import UIKit
 
-@MainActor
 public class AuthViewModel: ObservableObject {
-    @Published public var email = ""
-    @Published public var password = ""
-    @Published public var isLoading = false
-    @Published public var errorMessage: String?
-    
-    // In a real app, this would use SupabaseService.shared
-    
-    public init() {}
-    
-    public func login(completion: @escaping () -> Void) {
-        guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Please enter email and password."
+    @Published var email = ""
+    @Published var password = ""
+    @Published var confirmPassword = ""
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    @Published var showConfirmationAlert = false
+
+    var isEmailValid: Bool {
+        let pattern = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+        return NSPredicate(format: "SELF MATCHES %@", pattern).evaluate(with: email)
+    }
+
+    var isPasswordValid: Bool {
+        password.count >= 6
+    }
+
+    var canLogin: Bool {
+        !email.isEmpty && !password.isEmpty && isEmailValid && !isLoading
+    }
+
+    var canSignUp: Bool {
+        !email.isEmpty && !password.isEmpty && isEmailValid && isPasswordValid
+            && !confirmPassword.isEmpty && confirmPassword == password && !isLoading
+    }
+
+    private let supabase = SupabaseService.shared
+
+    func login(completion: @escaping (Bool) -> Void) {
+        guard canLogin else {
+            if email.isEmpty || password.isEmpty {
+                errorMessage = "Please enter your email and password."
+            } else if !isEmailValid {
+                errorMessage = "Please enter a valid email address."
+            }
             return
         }
-        
+
         isLoading = true
         errorMessage = nil
-        
-        // Simulating network request for Supabase Auth
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.isLoading = false
-            // Trigger haptic for success
-            let generator = UIImpactFeedbackGenerator(style: .medium)
-            generator.impactOccurred()
-            completion()
+
+        Task {
+            do {
+                try await supabase.signIn(email: email, password: password)
+                self.isLoading = false
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                completion(true)
+            } catch {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                completion(false)
+            }
         }
     }
-    
-    public func signUp(completion: @escaping () -> Void) {
-        guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Please enter email and password to sign up."
+
+    func signUp(completion: @escaping (Bool) -> Void) {
+        guard canSignUp else {
+            if email.isEmpty || password.isEmpty {
+                errorMessage = "Please fill in all fields."
+            } else if !isEmailValid {
+                errorMessage = "Please enter a valid email address."
+            } else if !isPasswordValid {
+                errorMessage = "Password must be at least 6 characters."
+            } else if confirmPassword != password {
+                errorMessage = "Passwords do not match."
+            }
             return
         }
-        
+
         isLoading = true
         errorMessage = nil
-        
-        // Simulating network request for Supabase Auth
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.isLoading = false
-            // Trigger haptic
-            let generator = UIImpactFeedbackGenerator(style: .medium)
-            generator.impactOccurred()
-            completion()
+
+        Task {
+            do {
+                try await supabase.signUp(email: email, password: password)
+                self.isLoading = false
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                completion(true)
+            } catch let error as AuthError where error.errorDescription == AuthError.confirmationRequired.errorDescription {
+                self.isLoading = false
+                self.showConfirmationAlert = true
+                completion(false)
+            } catch {
+                self.isLoading = false
+                self.errorMessage = error.localizedDescription
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                completion(false)
+            }
         }
     }
 }

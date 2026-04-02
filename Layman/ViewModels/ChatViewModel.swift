@@ -1,86 +1,110 @@
 import Foundation
 import Combine
-import SwiftUI
 import UIKit
 
-@MainActor
 public class ChatViewModel: ObservableObject {
-    @Published public var messages: [ChatMessage] = []
-    @Published public var isTyping = false
-    
-    // Suggested Questions (auto-generated logic via random pick for prototype)
-    public let suggestions = [
-        "What does this mean for the industry?",
-        "Who are the competitors?",
-        "Explain this to me like a 10-year-old."
-    ]
-    
+    @Published var messages: [ChatMessage] = []
+    @Published var isTyping = false
+    @Published var suggestions: [String] = []
+
     let articleContext: Article
-    
-    public init(article: Article) {
+
+    init(article: Article) {
         self.articleContext = article
-        
-        // Initial Message
-        self.messages.append(ChatMessage(text: "Hi, I'm Layman! What can I answer for you?", isUser: false))
+        self.messages.append(
+            ChatMessage(text: "Hi, I'm Layman! What can I answer for you?", isUser: false)
+        )
+        generateSuggestions()
     }
-    
-    public func fetchResponse(for userPrompt: String) {
+
+    func fetchResponse(for userPrompt: String) {
         let msg = ChatMessage(text: userPrompt, isUser: true)
         messages.append(msg)
         isTyping = true
-        
+        suggestions = []
+
         Task {
             do {
-                let aiResponse = try await fetchGeminiResponse(query: userPrompt, context: articleContext)
+                let aiResponse = try await callGemini(query: userPrompt)
                 self.isTyping = false
-                let botMsg = ChatMessage(text: aiResponse, isUser: false)
-                self.messages.append(botMsg)
-                // Haptic feedback when finishing typing
-                #if os(iOS)
+                self.messages.append(ChatMessage(text: aiResponse, isUser: false))
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                #endif
             } catch {
                 self.isTyping = false
-                let errorMsg = ChatMessage(text: "Oops, I had a bit of brain fog. (Error: \(error.localizedDescription))", isUser: false)
-                self.messages.append(errorMsg)
+                self.messages.append(
+                    ChatMessage(
+                        text: "Sorry, I couldn't process that right now. Try again in a moment!",
+                        isUser: false
+                    )
+                )
             }
         }
     }
-    
-    private func fetchGeminiResponse(query: String, context: Article) async throws -> String {
-        let systemPrompt = "You are Layman, a friendly expert who explains complex business and tech news to a 10-year-old. Use casual language, avoid jargon, and keep answers to 2 sentences max. Context article title: \(context.title), content snippet: \(context.chunkedContent.joined(separator: " "))."
-        
-        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=\(Environment.geminiAPIKey)"
-        guard let url = URL(string: endpoint) else {
-            throw URLError(.badURL)
+
+    private func generateSuggestions() {
+        Task {
+            do {
+                let prompt = """
+                Based on this news article, generate exactly 3 short curiosity-driven questions a reader might ask. \
+                Each question should be under 10 words. Return ONLY the 3 questions, one per line, no numbering.
+                
+                Article: \(articleContext.title)
+                Content: \(articleContext.displayContent.prefix(300))
+                """
+
+                let response = try await callGeminiRaw(prompt: prompt)
+                let lines = response.components(separatedBy: .newlines)
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                    .prefix(3)
+
+                self.suggestions = Array(lines)
+            } catch {
+                self.suggestions = [
+                    "What does this mean for me?",
+                    "Who are the main players here?",
+                    "Why should I care about this?"
+                ]
+            }
         }
-        
+    }
+
+    private func callGemini(query: String) async throws -> String {
+        let systemPrompt = """
+        You are Layman, a friendly expert who explains complex business and tech news \
+        in simple everyday language. Keep answers to 1-2 sentences max. Be conversational \
+        and casual. No jargon. Context article: "\(articleContext.title)" — \
+        \(articleContext.displayContent.prefix(500))
+        """
+
+        let fullPrompt = "\(systemPrompt)\n\nUser question: \(query)"
+        return try await callGeminiRaw(prompt: fullPrompt)
+    }
+
+    private func callGeminiRaw(prompt: String) async throws -> String {
+        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\(Environment.geminiAPIKey)"
+        guard let url = URL(string: endpoint) else { throw URLError(.badURL) }
+
         let reqBody: [String: Any] = [
             "contents": [
-                [
-                    "role": "user",
-                    "parts": [
-                        ["text": "\(systemPrompt)\n\nQuestion: \(query)"]
-                    ]
-                ]
+                ["role": "user", "parts": [["text": prompt]]]
             ],
             "generationConfig": [
-                "temperature": 0.5,
-                "maxOutputTokens": 100 // keep it short as requested -> 2 sentences max
+                "temperature": 0.7,
+                "maxOutputTokens": 150
             ]
         ]
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: reqBody)
-        
+
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             throw URLError(.badServerResponse)
         }
-        
-        // Quick dict parse for Gemini JSON schema
+
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let candidates = json["candidates"] as? [[String: Any]],
               let firstCandidate = candidates.first,
@@ -90,7 +114,7 @@ public class ChatViewModel: ObservableObject {
               let text = firstPart["text"] as? String else {
             throw URLError(.cannotParseResponse)
         }
-        
-        return text
+
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

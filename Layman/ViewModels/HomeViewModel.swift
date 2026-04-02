@@ -1,40 +1,45 @@
 import Foundation
 import Combine
 
-@MainActor
 public class HomeViewModel: ObservableObject {
-    @Published public var articles: [Article] = []
-    @Published public var isLoading = false
-    @Published public var errorMessage: String?
-    
-    // For the UI, we'll split articles into featured and 'today's picks'
-    public var featuredArticles: [Article] {
-        Array(articles.prefix(3))
+    @Published var articles: [Article] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    @Published var searchText = ""
+
+    var featuredArticles: [Article] {
+        let source = filteredArticles
+        return Array(source.prefix(min(5, source.count)))
     }
-    
-    public var todaysPicks: [Article] {
-        guard articles.count > 3 else { return [] }
-        return Array(articles.dropFirst(3))
+
+    var todaysPicks: [Article] {
+        let source = filteredArticles
+        guard source.count > 3 else { return [] }
+        return Array(source.dropFirst(3))
     }
-    
-    private let networkService: NetworkServiceType
-    
-    public init(networkService: NetworkServiceType = NetworkService.shared) {
-        self.networkService = networkService
+
+    var filteredArticles: [Article] {
+        if searchText.isEmpty { return articles }
+        let query = searchText.lowercased()
+        return articles.filter { article in
+            article.title.lowercased().contains(query)
+            || (article.description?.lowercased().contains(query) ?? false)
+            || (article.sourceID?.lowercased().contains(query) ?? false)
+        }
     }
-    
-    public func fetchArticles() {
+
+    private let networkService = NetworkService.shared
+
+    func fetchArticles() {
+        guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
-        
+
         Task {
             do {
-                // To simulate loading feel, we could delay, but let's just fetch
                 let fetched = try await networkService.fetchArticles()
-                
-                // Set to fallback mock data if empty (since valid API keys might not be present initially)
                 if fetched.isEmpty {
-                    self.articles = Article.mocks + Article.mocks
+                    self.articles = Article.mocks
                 } else {
                     self.articles = fetched
                 }
@@ -42,10 +47,23 @@ public class HomeViewModel: ObservableObject {
             } catch {
                 self.isLoading = false
                 self.errorMessage = error.localizedDescription
-                // Fallback for development if API fails
-                self.articles = Article.mocks + Article.mocks
-                print("Using mock data due to fetch error: \(error)")
+                if self.articles.isEmpty {
+                    self.articles = Article.mocks
+                }
             }
         }
+    }
+
+    func refresh() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            let fetched = try await networkService.fetchArticles()
+            self.articles = fetched.isEmpty ? Article.mocks : fetched
+        } catch {
+            self.errorMessage = error.localizedDescription
+            if self.articles.isEmpty { self.articles = Article.mocks }
+        }
+        self.isLoading = false
     }
 }

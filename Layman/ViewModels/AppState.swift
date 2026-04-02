@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import Combine
 
-public enum AppScreen {
+public enum AppScreen: Equatable {
     case welcome
     case auth
     case main
@@ -10,14 +10,66 @@ public enum AppScreen {
 
 public class AppState: ObservableObject {
     @Published public var currentScreen: AppScreen = .welcome
-    @Published public var isLoggedIn: Bool = false {
-        didSet {
-            currentScreen = isLoggedIn ? .main : .welcome
+    @Published public var isLoggedIn: Bool = false
+    @Published public var isCheckingSession: Bool = true
+    @Published public var savedArticleIDs: Set<String> = []
+
+    let supabase = SupabaseService.shared
+
+    public init() {
+        checkExistingSession()
+    }
+
+    private func checkExistingSession() {
+        if supabase.isAuthenticated {
+            Task {
+                let restored = await supabase.restoreSession()
+                self.isCheckingSession = false
+                if restored {
+                    self.isLoggedIn = true
+                    self.currentScreen = .main
+                    await self.refreshSavedArticleIDs()
+                }
+            }
+        } else {
+            isCheckingSession = false
         }
     }
-    
-    public init() {
-        // Here we could check persistent storage (e.g., UserDefaults or Supabase session)
-        // to decide if we should skip the welcome/auth screen.
+
+    func login() {
+        withAnimation(.easeInOut(duration: 0.4)) {
+            isLoggedIn = true
+            currentScreen = .main
+        }
+        Task { await refreshSavedArticleIDs() }
+    }
+
+    func logout() async {
+        await supabase.signOut()
+        withAnimation(.easeInOut(duration: 0.4)) {
+            isLoggedIn = false
+            currentScreen = .welcome
+            savedArticleIDs = []
+        }
+    }
+
+    func toggleSaveArticle(_ article: Article) async {
+        if savedArticleIDs.contains(article.id) {
+            savedArticleIDs.remove(article.id)
+            try? await supabase.unsaveArticle(articleId: article.id)
+        } else {
+            savedArticleIDs.insert(article.id)
+            try? await supabase.saveArticle(article)
+        }
+    }
+
+    func isArticleSaved(_ article: Article) -> Bool {
+        savedArticleIDs.contains(article.id)
+    }
+
+    func refreshSavedArticleIDs() async {
+        if let articles = try? await supabase.fetchSavedArticles() {
+            savedArticleIDs = Set(articles.map { $0.id })
+        }
     }
 }

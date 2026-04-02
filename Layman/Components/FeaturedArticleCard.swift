@@ -2,58 +2,78 @@ import SwiftUI
 
 public struct FeaturedArticleCard: View {
     let article: Article
-    var geometryPosition: CGFloat? = 0 // Used for parallax effect if provided
-    var matchedNamespace: Namespace.ID? = nil
-    
+    var width: CGFloat = 320
+
+    private var height: CGFloat { width * 0.72 }
+
     public var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Background Image
             Group {
                 if let urlString = article.imageURL, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Rectangle().fill(Theme.Colors.beige)
-                            .overlay(ProgressView())
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        case .failure:
+                            fallbackGradient
+                        default:
+                            ZStack {
+                                Theme.Colors.beige
+                                ProgressView()
+                                    .tint(Theme.Colors.accentOrange)
+                            }
+                        }
                     }
                 } else {
-                    // Fallback gradient matching theme
-                    Theme.Colors.primaryGradient
+                    fallbackGradient
                 }
             }
-            // Optional parallax modifier simply using offset relative to geo
-            .offset(x: (geometryPosition ?? 0) * 0.1)
-            .frame(width: 320, height: 420)
+            .frame(width: width, height: height)
             .clipped()
-            
-            if let ns = matchedNamespace {
-                Color.clear
-                    .matchedGeometryEffect(id: "image-\(article.id)", in: ns)
-            }
-            
-            // Bottom gradient overlay for readability
+
             LinearGradient(
-                gradient: Gradient(colors: [.black.opacity(0.8), .clear]),
+                gradient: Gradient(colors: [.black.opacity(0.7), .black.opacity(0.2), .clear]),
                 startPoint: .bottom,
-                endPoint: .center
+                endPoint: .top
             )
-            .frame(width: 320, height: 420)
-            
-            // Headline Overlaid
-            Text(article.title)
-                .font(Theme.Typography.title2)
-                .foregroundColor(.white)
-                // Enforce exact 2 line truncation
-                .lineLimit(2)
-                .truncationMode(.tail)
-                .padding(Theme.Metrics.padding)
-                .padding(.bottom, 16)
-                .shadow(color: .black.opacity(0.3), radius: 2)
+
+            VStack(alignment: .leading, spacing: 8) {
+                if let source = article.sourceName ?? article.sourceID {
+                    Text(source.uppercased())
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(.white.opacity(0.2))
+                        .clipShape(Capsule())
+                }
+
+                Text(article.displayTitle)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .shadow(color: .black.opacity(0.4), radius: 2)
+            }
+            .padding(Theme.Metrics.padding)
+            .padding(.bottom, 4)
         }
-        .frame(width: 320, height: 420)
-        .cornerRadius(Theme.Metrics.largeCornerRadius)
-        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius))
+        .shadow(color: .black.opacity(0.12), radius: 16, y: 8)
+    }
+
+    private var fallbackGradient: some View {
+        LinearGradient(
+            colors: [Theme.Colors.peach, Theme.Colors.accentOrange],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .overlay(
+            Image(systemName: "newspaper.fill")
+                .font(.system(size: 40))
+                .foregroundColor(.white.opacity(0.3))
+        )
     }
 }

@@ -1,114 +1,87 @@
 import SwiftUI
+import UIKit
 
 public struct WelcomeView: View {
     @ObservedObject var appState: AppState
     @State private var revealProgress: Double = 0
-    @State private var highlightPulse = false
-    @State private var arrowBounce = false
-    
+    @State private var logoScale: CGFloat = 0.8
+    @State private var logoOpacity: Double = 0
+    @State private var sloganOpacity: Double = 0
+    @State private var sliderOpacity: Double = 0
+
     public var body: some View {
         ZStack {
             Theme.Colors.primaryGradient
                 .ignoresSafeArea()
-            
-            VStack {
+
+            Circle()
+                .fill(.white.opacity(0.06))
+                .frame(width: 400, height: 400)
+                .offset(x: -100, y: -200)
+
+            Circle()
+                .fill(.white.opacity(0.04))
+                .frame(width: 300, height: 300)
+                .offset(x: 150, y: 300)
+
+            VStack(spacing: 0) {
                 Spacer()
-                
-                // Logo
-                Text("Layman")
-                    .font(Theme.Typography.logo)
-                    .foregroundColor(Theme.Colors.darkText)
-                    .padding(.bottom, 8)
-                
-                // Slogan
-                VStack(spacing: 8) {
-                    AnimatedRevealText(
-                        text: "Business, tech & startups",
-                        progress: revealProgress
-                    )
-                    .font(Theme.Typography.title3)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(Theme.Colors.darkText)
-                    .opacity(0.95)
-                    .padding(.horizontal, 32)
-                    
-                    Text("made simple")
-                        .font(Theme.Typography.title3.weight(.bold))
-                        .foregroundColor(Theme.Colors.accentOrange)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(Theme.Colors.accentOrange.opacity(0.18))
-                                .blur(radius: highlightPulse ? 18 : 12)
-                                .scaleEffect(highlightPulse ? 1.05 : 0.95)
-                        )
-                        .shadow(color: Theme.Colors.accentOrange.opacity(0.25), radius: 10, y: 4)
+
+                VStack(spacing: 16) {
+                    Text("Layman")
+                        .font(Theme.Typography.logo)
+                        .foregroundColor(.white)
+                        .scaleEffect(logoScale)
+                        .opacity(logoOpacity)
+
+                    VStack(spacing: 8) {
+                        Text("Business, tech & startups")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.white.opacity(0.9))
+
+                        Text("made simple")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(.white.opacity(0.2))
+                            )
+                    }
+                    .opacity(sloganOpacity)
                 }
-                
+
                 Spacer()
-                
-                // Swipe to Start
-                SwipeToStartSlider {
-                    // Action when completed
-                    appState.currentScreen = .auth
-                }
-                .padding(.horizontal, Theme.Metrics.padding * 2)
-                .padding(.bottom, 60)
-                
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.9))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        Capsule()
-                            .fill(Color.white.opacity(0.2))
-                            .overlay(Capsule().stroke(Color.white.opacity(0.35), lineWidth: 1))
-                    )
-                    .offset(x: arrowBounce ? 10 : -2)
-                    .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: arrowBounce)
-                    .onAppear {
-                        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                        withAnimation(.easeInOut(duration: 1.8)) {
-                            revealProgress = 1
-                        }
-                        withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true).delay(0.4)) {
-                            highlightPulse.toggle()
-                        }
-                        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                            arrowBounce.toggle()
+
+                VStack(spacing: 20) {
+                    SwipeToStartSlider {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            appState.currentScreen = .auth
                         }
                     }
+                    .padding(.horizontal, 32)
+
+                    Text("Swipe to explore")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+                .opacity(sliderOpacity)
+                .padding(.bottom, 60)
             }
         }
-    }
-}
-
-struct AnimatedRevealText: View {
-    let text: String
-    let progress: Double
-    
-    var body: some View {
-        Text(text)
-            .foregroundColor(Theme.Colors.darkText.opacity(0.25))
-            .overlay(alignment: .leading) {
-                GeometryReader { geo in
-                    let width = geo.size.width * progress
-                    Text(text)
-                        .foregroundColor(Theme.Colors.darkText)
-                        .mask(
-                            Rectangle()
-                                .frame(width: width)
-                                .alignmentGuide(.leading) { d in d[.leading] }
-                        )
-                }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.7)) {
+                logoScale = 1.0
+                logoOpacity = 1.0
             }
-    }
-}
-
-struct WelcomeView_Previews: PreviewProvider {
-    static var previews: some View {
-        WelcomeView(appState: AppState())
+            withAnimation(.easeOut(duration: 0.6).delay(0.3)) {
+                sloganOpacity = 1.0
+            }
+            withAnimation(.easeOut(duration: 0.6).delay(0.6)) {
+                sliderOpacity = 1.0
+            }
+        }
     }
 }

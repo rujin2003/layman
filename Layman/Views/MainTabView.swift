@@ -4,6 +4,7 @@ import UIKit
 public struct MainTabView: View {
     @ObservedObject var appState: AppState
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var pushNotifications: PushNotificationManager
     @State private var selection = 0
 
     public var body: some View {
@@ -33,6 +34,19 @@ public struct MainTabView: View {
         .onAppear { applyTabBarAppearance() }
         .onChange(of: colorScheme) { _, _ in applyTabBarAppearance() }
         .onChange(of: appState.appearanceMode) { _, _ in applyTabBarAppearance() }
+        .task {
+            await pushNotifications.refreshAuthorizationStatus()
+            switch pushNotifications.authorizationStatus {
+            case .notDetermined:
+                await pushNotifications.requestPermissionAndRegister()
+            case .authorized, .provisional, .ephemeral:
+                pushNotifications.registerForRemoteNotifications()
+            case .denied:
+                break
+            @unknown default:
+                break
+            }
+        }
     }
 
     private func applyTabBarAppearance() {

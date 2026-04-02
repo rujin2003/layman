@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct LaymanApp: App {
+    @UIApplicationDelegateAdaptor(LaymanAppDelegate.self) private var appDelegate
     @StateObject private var appState = AppState()
 
     var body: some Scene {
@@ -26,6 +27,7 @@ struct LaymanApp: App {
             .animation(.easeInOut(duration: 0.4), value: appState.currentScreen)
             .preferredColorScheme(appState.appearanceMode.preferredColorScheme)
             .environmentObject(appState)
+            .environmentObject(PushNotificationManager.shared)
         }
     }
 }

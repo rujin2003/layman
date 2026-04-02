@@ -1,0 +1,7 @@
+# Firebase — do not commit (contains API keys and project identifiers)
+Layman/GoogleService-Info.plist
+**/GoogleService-Info.plist
+
+# Xcode user state
+**/xcuserdata/
+*.xcuserstate

@@ -1,6 +1,7 @@
 import Foundation
 
-public enum Environment {
+/// API keys and base URLs. Renamed from `Environment` to avoid clashing with SwiftUI's `@Environment`.
+public enum AppSecrets {
     static let supabaseURL = "https://hoikactmxqxioginbsao.supabase.co"
 
     static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvaWthY3RteHF4aW9naW5ic2FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTcwNDIsImV4cCI6MjA5MDYzMzA0Mn0.Oja-BGANhqqsfPrmEZjSEggDD3o9KCsqHUIpkkmh2Qs"

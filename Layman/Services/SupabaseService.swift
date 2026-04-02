@@ -73,8 +73,8 @@ enum AuthError: LocalizedError {
 public class SupabaseService: ObservableObject {
     static let shared = SupabaseService()
 
-    private let baseURL = Environment.supabaseURL
-    private let anonKey = Environment.supabaseAnonKey
+    private let baseURL = AppSecrets.supabaseURL
+    private let anonKey = AppSecrets.supabaseAnonKey
 
     @Published var currentUser: SupabaseUser?
     @Published var isAuthenticated = false

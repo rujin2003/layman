@@ -82,7 +82,7 @@ public class ChatViewModel: ObservableObject {
     }
 
     private func callGeminiRaw(prompt: String) async throws -> String {
-        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\(Environment.geminiAPIKey)"
+        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\(AppSecrets.geminiAPIKey)"
         guard let url = URL(string: endpoint) else { throw URLError(.badURL) }
 
         let reqBody: [String: Any] = [

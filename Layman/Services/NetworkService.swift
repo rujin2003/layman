@@ -22,7 +22,7 @@ public class NetworkService {
     static let shared = NetworkService()
 
     private let baseURL = "https://newsdata.io/api/1/latest"
-    private var apiKey: String { Environment.newsDataAPIKey }
+    private var apiKey: String { AppSecrets.newsDataAPIKey }
 
     private init() {}
 

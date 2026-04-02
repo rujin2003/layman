@@ -3,6 +3,7 @@ import UIKit
 
 public struct ProfileView: View {
     @ObservedObject var appState: AppState
+    @EnvironmentObject private var pushNotifications: PushNotificationManager
     @State private var showLogoutConfirmation = false
 
     private var userEmail: String {
@@ -57,6 +58,9 @@ public struct ProfileView: View {
             }
         } message: {
             Text("Are you sure you want to sign out?")
+        }
+        .task {
+            await pushNotifications.refreshAuthorizationStatus()
         }
     }
 
@@ -132,7 +136,7 @@ public struct ProfileView: View {
         VStack(spacing: 2) {
             settingsRow(icon: "bookmark.fill", title: "Saved Articles", count: appState.savedArticleIDs.count)
             Divider().background(Theme.Colors.hairlineBorder).padding(.horizontal, 20)
-            settingsRow(icon: "bell.fill", title: "Notifications", subtitle: "Coming soon")
+            notificationsSettingsRow
             Divider().background(Theme.Colors.hairlineBorder).padding(.horizontal, 20)
             settingsRow(icon: "info.circle.fill", title: "About Layman", subtitle: "v1.0")
         }
@@ -140,6 +144,56 @@ public struct ProfileView: View {
         .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius))
         .shadow(color: Theme.Colors.cardShadow, radius: 12, y: 4)
         .padding(.horizontal, 20)
+    }
+
+    private var notificationsSettingsRow: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Task { @MainActor in
+                await pushNotifications.refreshAuthorizationStatus()
+                if pushNotifications.authorizationStatus == .denied {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        await UIApplication.shared.open(url)
+                    }
+                } else {
+                    await pushNotifications.requestPermissionAndRegister()
+                }
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Theme.Colors.accentOrange)
+                    .frame(width: 32, height: 32)
+                    .background(Theme.Colors.accentOrange.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Push notifications")
+                        .font(Theme.Typography.bodyMedium)
+                        .foregroundColor(Theme.Colors.darkText)
+                    if let err = pushNotifications.lastRegistrationError, !err.isEmpty {
+                        Text(err)
+                            .font(Theme.Typography.small)
+                            .foregroundColor(.red.opacity(0.85))
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer()
+
+                Text(pushNotifications.statusDescription)
+                    .font(Theme.Typography.caption)
+                    .foregroundColor(Theme.Colors.subtleText)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Theme.Colors.subtleText.opacity(0.5))
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .buttonStyle(.plain)
     }
 
     private func settingsRow(icon: String, title: String, subtitle: String? = nil, count: Int? = nil) -> some View {

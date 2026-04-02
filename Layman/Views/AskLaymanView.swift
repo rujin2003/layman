@@ -102,7 +102,7 @@ public struct AskLaymanView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(.white)
+                .background(Theme.Colors.messageBubble)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             Spacer()
@@ -159,7 +159,7 @@ public struct AskLaymanView: View {
                 .focused($isInputFocused)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(.white)
+                .background(Theme.Colors.messageBubble)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .onSubmit { sendMessage() }
 
@@ -224,7 +224,7 @@ public struct MessageBubble: View {
                     .foregroundColor(Theme.Colors.darkText)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(.white)
+                    .background(Theme.Colors.messageBubble)
                     .clipShape(
                         .rect(
                             topLeadingRadius: 6,
@@ -233,7 +233,7 @@ public struct MessageBubble: View {
                             topTrailingRadius: 18
                         )
                     )
-                    .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
+                    .shadow(color: Theme.Colors.cardShadow, radius: 4, y: 2)
 
                 Spacer(minLength: 50)
             }

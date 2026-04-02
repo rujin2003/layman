@@ -48,6 +48,6 @@ public struct ArticleContentCard: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(Theme.Colors.cardWhite)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius))
-        .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
+        .shadow(color: Theme.Colors.cardShadow, radius: 12, y: 4)
     }
 }

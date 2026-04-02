@@ -9,14 +9,25 @@ public enum AppScreen: Equatable {
 }
 
 public class AppState: ObservableObject {
+    private static let appearanceStorageKey = "layman_appearance_mode"
+
     @Published public var currentScreen: AppScreen = .welcome
     @Published public var isLoggedIn: Bool = false
     @Published public var isCheckingSession: Bool = true
     @Published public var savedArticleIDs: Set<String> = []
+    @Published public var appearanceMode: AppearanceMode = .system {
+        didSet {
+            UserDefaults.standard.set(appearanceMode.rawValue, forKey: Self.appearanceStorageKey)
+        }
+    }
 
     let supabase = SupabaseService.shared
 
     public init() {
+        if let raw = UserDefaults.standard.string(forKey: Self.appearanceStorageKey),
+           let stored = AppearanceMode(rawValue: raw) {
+            appearanceMode = stored
+        }
         checkExistingSession()
     }
 

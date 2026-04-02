@@ -80,9 +80,9 @@ public struct SignUpView: View {
                         }
                     }
                     .padding(20)
-                    .background(.white.opacity(0.7))
+                    .background(Theme.Colors.formCardFill)
                     .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.largeCornerRadius))
-                    .shadow(color: .black.opacity(0.04), radius: 20, y: 10)
+                    .shadow(color: Theme.Colors.cardShadow, radius: 20, y: 10)
                     .padding(.horizontal, Theme.Metrics.padding)
 
                     VStack(spacing: 16) {

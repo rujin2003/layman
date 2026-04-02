@@ -3,6 +3,7 @@ import UIKit
 
 public struct MainTabView: View {
     @ObservedObject var appState: AppState
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selection = 0
 
     public var body: some View {
@@ -29,23 +30,27 @@ public struct MainTabView: View {
                 .tag(2)
         }
         .tint(Theme.Colors.accentOrange)
-        .onAppear {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor(Theme.Colors.cream)
+        .onAppear { applyTabBarAppearance() }
+        .onChange(of: colorScheme) { _, _ in applyTabBarAppearance() }
+        .onChange(of: appState.appearanceMode) { _, _ in applyTabBarAppearance() }
+    }
 
-            let itemAppearance = UITabBarItemAppearance()
-            itemAppearance.normal.iconColor = UIColor(Theme.Colors.subtleText)
-            itemAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.subtleText)]
-            itemAppearance.selected.iconColor = UIColor(Theme.Colors.accentOrange)
-            itemAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.accentOrange)]
+    private func applyTabBarAppearance() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = Theme.Colors.creamUIColor
 
-            appearance.stackedLayoutAppearance = itemAppearance
-            appearance.inlineLayoutAppearance = itemAppearance
-            appearance.compactInlineLayoutAppearance = itemAppearance
+        let itemAppearance = UITabBarItemAppearance()
+        itemAppearance.normal.iconColor = Theme.Colors.subtleTextUIColor
+        itemAppearance.normal.titleTextAttributes = [.foregroundColor: Theme.Colors.subtleTextUIColor]
+        itemAppearance.selected.iconColor = Theme.Colors.accentOrangeUIColor
+        itemAppearance.selected.titleTextAttributes = [.foregroundColor: Theme.Colors.accentOrangeUIColor]
 
-            UITabBar.appearance().standardAppearance = appearance
-            UITabBar.appearance().scrollEdgeAppearance = appearance
-        }
+        appearance.stackedLayoutAppearance = itemAppearance
+        appearance.inlineLayoutAppearance = itemAppearance
+        appearance.compactInlineLayoutAppearance = itemAppearance
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 }

@@ -93,11 +93,11 @@ public struct SavedView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)
-        .background(.white.opacity(0.8))
+        .background(Theme.Colors.elevatedSurface)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                .stroke(Theme.Colors.hairlineBorder, lineWidth: 1)
         )
         .padding(.horizontal, 20)
     }
@@ -141,7 +141,7 @@ public struct SavedView: View {
                 ArticleRow(article: article)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 6)
-                    .background(.white.opacity(0.6))
+                    .background(Theme.Colors.listRowSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal, 12)
                     .onTapGesture {

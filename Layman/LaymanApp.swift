@@ -24,6 +24,7 @@ struct LaymanApp: App {
                 }
             }
             .animation(.easeInOut(duration: 0.4), value: appState.currentScreen)
+            .preferredColorScheme(appState.appearanceMode.preferredColorScheme)
             .environmentObject(appState)
         }
     }

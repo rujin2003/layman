@@ -61,7 +61,7 @@ public struct FeaturedArticleCard: View {
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius))
-        .shadow(color: .black.opacity(0.12), radius: 16, y: 8)
+        .shadow(color: Theme.Colors.cardShadow, radius: 16, y: 8)
     }
 
     private var fallbackGradient: some View {

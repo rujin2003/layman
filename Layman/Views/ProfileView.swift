@@ -39,6 +39,7 @@ public struct ProfileView: View {
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 24) {
                             userInfoCard
+                            appearanceSection
                             settingsSection
                             Spacer(minLength: 40)
                             logoutButton
@@ -86,7 +87,42 @@ public struct ProfileView: View {
         .frame(maxWidth: .infinity)
         .background(Theme.Colors.cardWhite)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius))
-        .shadow(color: .black.opacity(0.04), radius: 12, y: 4)
+        .shadow(color: Theme.Colors.cardShadow, radius: 12, y: 4)
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Appearance
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "circle.lefthalf.filled")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Theme.Colors.accentOrange)
+                Text("Appearance")
+                    .font(Theme.Typography.headline)
+                    .foregroundColor(Theme.Colors.darkText)
+            }
+
+            Text("Choose light, dark, or match your device.")
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.subtleText)
+
+            Picker("Appearance", selection: $appState.appearanceMode) {
+                ForEach(AppearanceMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: appState.appearanceMode) { _, _ in
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.Colors.cardWhite)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius))
+        .shadow(color: Theme.Colors.cardShadow, radius: 12, y: 4)
         .padding(.horizontal, 20)
     }
 
@@ -95,16 +131,14 @@ public struct ProfileView: View {
     private var settingsSection: some View {
         VStack(spacing: 2) {
             settingsRow(icon: "bookmark.fill", title: "Saved Articles", count: appState.savedArticleIDs.count)
-            Divider().padding(.horizontal, 20)
+            Divider().background(Theme.Colors.hairlineBorder).padding(.horizontal, 20)
             settingsRow(icon: "bell.fill", title: "Notifications", subtitle: "Coming soon")
-            Divider().padding(.horizontal, 20)
-            settingsRow(icon: "paintbrush.fill", title: "Appearance", subtitle: "Light")
-            Divider().padding(.horizontal, 20)
+            Divider().background(Theme.Colors.hairlineBorder).padding(.horizontal, 20)
             settingsRow(icon: "info.circle.fill", title: "About Layman", subtitle: "v1.0")
         }
         .background(Theme.Colors.cardWhite)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius))
-        .shadow(color: .black.opacity(0.04), radius: 12, y: 4)
+        .shadow(color: Theme.Colors.cardShadow, radius: 12, y: 4)
         .padding(.horizontal, 20)
     }
 
@@ -129,7 +163,7 @@ public struct ProfileView: View {
                     .foregroundColor(Theme.Colors.subtleText)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(Theme.Colors.beige)
+                    .background(Theme.Colors.elevatedSurface)
                     .clipShape(Capsule())
             } else if let subtitle = subtitle {
                 Text(subtitle)

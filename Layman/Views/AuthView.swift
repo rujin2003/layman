@@ -1,98 +1,189 @@
 import SwiftUI
+import UIKit
 
 public struct AuthView: View {
     @ObservedObject var appState: AppState
     @StateObject private var viewModel = AuthViewModel()
-    
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case email, password }
+
     public var body: some View {
-        ZStack {
-            Theme.Colors.cream
-                .ignoresSafeArea()
-            
-            VStack(spacing: 32) {
-                // Header
-                VStack(spacing: 8) {
-                    Text("Welcome Back")
-                        .font(Theme.Typography.title1)
-                        .foregroundColor(Theme.Colors.darkText)
-                    
-                    Text("Sign in to continue reading")
-                        .font(Theme.Typography.body)
-                        .foregroundColor(Theme.Colors.darkText.opacity(0.6))
-                }
-                .padding(.top, 60)
-                
-                // Form
-                VStack(spacing: 16) {
-                    TextField("Email", text: $viewModel.email)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .padding()
-                        .background(Theme.Colors.beige)
-                        .cornerRadius(Theme.Metrics.cornerRadius)
-                    
-                    SecureField("Password", text: $viewModel.password)
-                        .padding()
-                        .background(Theme.Colors.beige)
-                        .cornerRadius(Theme.Metrics.cornerRadius)
-                }
-                .padding(.horizontal, Theme.Metrics.padding)
-                
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(Theme.Typography.caption)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                
-                // Actions
-                VStack(spacing: 16) {
-                    Button(action: {
-                        viewModel.login {
-                            appState.isLoggedIn = true
+        NavigationStack {
+            ZStack {
+                Theme.Colors.cream.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 32) {
+                        VStack(spacing: 8) {
+                            Text("Layman")
+                                .font(Theme.Typography.logoSmall)
+                                .foregroundColor(Theme.Colors.accentOrange)
+                                .padding(.top, 20)
+
+                            Text("Welcome Back")
+                                .font(Theme.Typography.title1)
+                                .foregroundColor(Theme.Colors.darkText)
+
+                            Text("Sign in to continue reading")
+                                .font(Theme.Typography.body)
+                                .foregroundColor(Theme.Colors.subtleText)
                         }
-                    }) {
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .padding(.top, 40)
+
+                        VStack(spacing: 16) {
+                            AuthTextField(
+                                icon: "envelope.fill",
+                                placeholder: "Email address",
+                                text: $viewModel.email,
+                                isSecure: false,
+                                keyboardType: .emailAddress,
+                                isValid: viewModel.email.isEmpty || viewModel.isEmailValid
+                            )
+                            .focused($focusedField, equals: .email)
+                            .textInputAutocapitalization(.never)
+
+                            if !viewModel.isEmailValid && !viewModel.email.isEmpty {
+                                Text("Please enter a valid email address")
+                                    .font(Theme.Typography.small)
+                                    .foregroundColor(.red.opacity(0.8))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 4)
+                            }
+
+                            AuthTextField(
+                                icon: "lock.fill",
+                                placeholder: "Password",
+                                text: $viewModel.password,
+                                isSecure: true,
+                                keyboardType: .default,
+                                isValid: true
+                            )
+                            .focused($focusedField, equals: .password)
+                            .textInputAutocapitalization(.never)
+
+                            if let error = viewModel.errorMessage {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "exclamationmark.circle.fill")
+                                        .font(.system(size: 14))
+                                    Text(error)
+                                        .font(Theme.Typography.caption)
+                                }
+                                .foregroundColor(.red.opacity(0.8))
+                                .padding(.vertical, 4)
+                            }
+                        }
+                        .padding(20)
+                        .background(.white.opacity(0.7))
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.largeCornerRadius))
+                        .shadow(color: .black.opacity(0.04), radius: 20, y: 10)
+                        .padding(.horizontal, Theme.Metrics.padding)
+
+                        VStack(spacing: 16) {
+                            Button(action: {
+                                focusedField = nil
+                                viewModel.login { success in
+                                    if success { appState.login() }
+                                }
+                            }) {
+                                ZStack {
+                                    if viewModel.isLoading {
+                                        ProgressView()
+                                            .tint(.white)
+                                    } else {
+                                        Text("Log In")
+                                            .font(Theme.Typography.headline)
+                                            .foregroundColor(.white)
+                                    }
+                                }
                                 .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Theme.Colors.primaryGradient)
-                                .cornerRadius(Theme.Metrics.largeCornerRadius)
-                        } else {
-                            Text("Log In")
-                                .font(Theme.Typography.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Theme.Colors.primaryGradient)
-                                .cornerRadius(Theme.Metrics.largeCornerRadius)
+                                .frame(height: 54)
+                                .background(Theme.Colors.buttonGradient)
+                                .clipShape(RoundedRectangle(cornerRadius: Theme.Metrics.largeCornerRadius))
+                                .shadow(color: Theme.Colors.accentOrange.opacity(0.3), radius: 12, y: 6)
+                            }
+                            .disabled(!viewModel.canLogin)
+                            .opacity(viewModel.canLogin ? 1.0 : 0.6)
+
+                            NavigationLink {
+                                SignUpView(appState: appState)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text("New here?")
+                                        .foregroundColor(Theme.Colors.subtleText)
+                                    Text("Create an account")
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(Theme.Colors.accentOrange)
+                                }
+                                .font(Theme.Typography.body)
+                            }
+                        }
+                        .padding(.horizontal, Theme.Metrics.padding)
+
+                        Spacer(minLength: 40)
+                    }
+                }
+                .onSubmit {
+                    switch focusedField {
+                    case .email: focusedField = .password
+                    default:
+                        focusedField = nil
+                        viewModel.login { success in
+                            if success { appState.login() }
                         }
                     }
-                    .disabled(viewModel.isLoading)
-                    
-                    Button(action: {
-                        viewModel.signUp {
-                            appState.isLoggedIn = true
-                        }
-                    }) {
-                        Text("Don't have an account? Sign Up")
-                            .font(Theme.Typography.body)
-                            .foregroundColor(Theme.Colors.accentOrange)
-                    }
-                    .disabled(viewModel.isLoading)
                 }
-                .padding(.horizontal, Theme.Metrics.padding)
-                
-                Spacer()
+            }
+            .navigationBarBackButtonHidden()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation { appState.currentScreen = .welcome }
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Theme.Colors.darkText)
+                            .padding(8)
+                            .background(Theme.Colors.beige)
+                            .clipShape(Circle())
+                    }
+                }
             }
         }
     }
 }
 
-struct AuthView_Previews: PreviewProvider {
-    static var previews: some View {
-        AuthView(appState: AppState())
+struct AuthTextField: View {
+    let icon: String
+    let placeholder: String
+    @Binding var text: String
+    let isSecure: Bool
+    let keyboardType: UIKeyboardType
+    let isValid: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(isValid ? Theme.Colors.accentOrange.opacity(0.7) : .red.opacity(0.7))
+                .frame(width: 22)
+
+            if isSecure {
+                SecureField(placeholder, text: $text)
+                    .keyboardType(keyboardType)
+            } else {
+                TextField(placeholder, text: $text)
+                    .keyboardType(keyboardType)
+            }
+        }
+        .font(Theme.Typography.body)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(Theme.Colors.beige.opacity(0.7))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(isValid ? Color.clear : Color.red.opacity(0.4), lineWidth: 1)
+        )
     }
 }

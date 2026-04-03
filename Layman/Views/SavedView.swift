@@ -56,6 +56,9 @@ public struct SavedView: View {
                 }
             }
             .onAppear { Task { await loadSavedArticles() } }
+            .onChange(of: appState.savedArticleIDs) { _, newIDs in
+                savedArticles = savedArticles.filter { newIDs.contains($0.id) }
+            }
         }
     }
 

@@ -2,6 +2,12 @@
 Layman/GoogleService-Info.plist
 **/GoogleService-Info.plist
 
+# API keys — copy Secrets.plist.example → Secrets.plist locally
+Layman/Secrets.plist
+
+# Local env (optional tooling)
+.env
+
 # Xcode user state
 **/xcuserdata/
 *.xcuserstate

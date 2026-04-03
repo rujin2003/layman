@@ -283,6 +283,24 @@ public class SupabaseService: ObservableObject {
         return records.map { Article(from: $0) }
     }
 
+    func deleteAllSavedArticles() async throws {
+        guard let token = accessToken, let userId = currentUser?.id else {
+            throw AuthError.notAuthenticated
+        }
+
+        let urlString = "\(baseURL)/rest/v1/saved_articles?user_id=eq.\(userId)"
+        guard let url = URL(string: urlString) else { throw AuthError.networkError("Invalid URL") }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue(anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw AuthError.networkError("Failed to delete saved articles")
+        }
+    }
+
     func isArticleSaved(articleId: String) async -> Bool {
         guard let token = accessToken, let userId = currentUser?.id else { return false }
 

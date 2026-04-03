@@ -83,4 +83,13 @@ public class AppState: ObservableObject {
             savedArticleIDs = Set(articles.map { $0.id })
         }
     }
+
+    func deleteAllSavedArticles() async {
+        do {
+            try await supabase.deleteAllSavedArticles()
+            savedArticleIDs = []
+        } catch {
+            // Caller can show alert if needed
+        }
+    }
 }

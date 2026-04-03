@@ -1,12 +1,27 @@
 import Foundation
 
-/// API keys and base URLs. Renamed from `Environment` to avoid clashing with SwiftUI's `@Environment`.
+/// API keys and URLs. Values come from `Secrets.plist` in the app bundle (not committed).
+/// Copy `Secrets.plist.example` → `Secrets.plist` in this folder and fill in your keys.
 public enum AppSecrets {
-    static let supabaseURL = "https://hoikactmxqxioginbsao.supabase.co"
+    private static let secrets: [String: String] = {
+        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
+              let data = try? Data(contentsOf: url),
+              let root = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
+              let dict = root as? [String: String] else {
+            #if DEBUG
+            print("Layman: Add Secrets.plist (copy from Secrets.plist.example) with your API keys.")
+            #endif
+            return [:]
+        }
+        return dict
+    }()
 
-    static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvaWthY3RteHF4aW9naW5ic2FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNTcwNDIsImV4cCI6MjA5MDYzMzA0Mn0.Oja-BGANhqqsfPrmEZjSEggDD3o9KCsqHUIpkkmh2Qs"
+    private static func value(_ key: String) -> String {
+        (secrets[key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
-    static let newsDataAPIKey = "pub_de913d9b49614bdc92584ef6c7e5ff7d"
-
-    static let geminiAPIKey = "AIzaSyAhU8zro-3dNCg7yXpKgrJOcJFP23p0Q9c"
+    public static let supabaseURL: String = value("SUPABASE_URL")
+    public static let supabaseAnonKey: String = value("SUPABASE_ANON_KEY")
+    public static let newsDataAPIKey: String = value("NEWSDATA_API_KEY")
+    public static let geminiAPIKey: String = value("GEMINI_API_KEY")
 }

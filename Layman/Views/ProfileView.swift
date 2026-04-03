@@ -5,6 +5,7 @@ public struct ProfileView: View {
     @ObservedObject var appState: AppState
     @EnvironmentObject private var pushNotifications: PushNotificationManager
     @State private var showLogoutConfirmation = false
+    @State private var showSavedArticlesActions = false
 
     private var userEmail: String {
         SupabaseService.shared.userEmail
@@ -61,6 +62,17 @@ public struct ProfileView: View {
         }
         .task {
             await pushNotifications.refreshAuthorizationStatus()
+        }
+        .confirmationDialog("Saved articles", isPresented: $showSavedArticlesActions, titleVisibility: .visible) {
+            Button("Delete all saved", role: .destructive) {
+                Task {
+                    await appState.deleteAllSavedArticles()
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("\(appState.savedArticleIDs.count) saved. Delete all removes them from your account.")
         }
     }
 
@@ -134,7 +146,13 @@ public struct ProfileView: View {
 
     private var settingsSection: some View {
         VStack(spacing: 2) {
-            settingsRow(icon: "bookmark.fill", title: "Saved Articles", count: appState.savedArticleIDs.count)
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                showSavedArticlesActions = true
+            } label: {
+                settingsRow(icon: "bookmark.fill", title: "Saved Articles", count: appState.savedArticleIDs.count)
+            }
+            .buttonStyle(.plain)
             Divider().background(Theme.Colors.hairlineBorder).padding(.horizontal, 20)
             notificationsSettingsRow
             Divider().background(Theme.Colors.hairlineBorder).padding(.horizontal, 20)
@@ -172,6 +190,12 @@ public struct ProfileView: View {
                     Text("Push notifications")
                         .font(Theme.Typography.bodyMedium)
                         .foregroundColor(Theme.Colors.darkText)
+                    if let sim = pushNotifications.simulatorPushNote {
+                        Text(sim)
+                            .font(Theme.Typography.small)
+                            .foregroundColor(Theme.Colors.subtleText)
+                            .lineLimit(3)
+                    }
                     if let err = pushNotifications.lastRegistrationError, !err.isEmpty {
                         Text(err)
                             .font(Theme.Typography.small)

@@ -66,4 +66,13 @@ final class PushNotificationManager: ObservableObject {
         @unknown default: return "Unknown"
         }
     }
+
+    /// Remote push delivery is unreliable on Simulator; use a real device to verify FCM/APNs.
+    var simulatorPushNote: String? {
+        #if targetEnvironment(simulator)
+        return "Simulator cannot receive remote push. Use a physical iPhone to test notifications."
+        #else
+        return nil
+        #endif
+    }
 }

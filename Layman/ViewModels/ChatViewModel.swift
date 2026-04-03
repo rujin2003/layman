@@ -2,14 +2,15 @@ import Foundation
 import Combine
 import UIKit
 
-public class ChatViewModel: ObservableObject {
+@MainActor
+public final class ChatViewModel: ObservableObject {
     @Published var messages: [ChatMessage] = []
     @Published var isTyping = false
     @Published var suggestions: [String] = []
 
     let articleContext: Article
 
-    init(article: Article) {
+    public init(article: Article) {
         self.articleContext = article
         self.messages.append(
             ChatMessage(text: "Hi, I'm Layman! What can I answer for you?", isUser: false)
@@ -25,15 +26,16 @@ public class ChatViewModel: ObservableObject {
 
         Task {
             do {
-                let aiResponse = try await callGemini(query: userPrompt)
+                let aiResponse = try await answerWithContext(userPrompt: userPrompt)
                 self.isTyping = false
                 self.messages.append(ChatMessage(text: aiResponse, isUser: false))
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             } catch {
                 self.isTyping = false
+                let detail = error.localizedDescription
                 self.messages.append(
                     ChatMessage(
-                        text: "Sorry, I couldn't process that right now. Try again in a moment!",
+                        text: "Hmm, I hit a snag: \(detail)",
                         isUser: false
                     )
                 )
@@ -43,21 +45,20 @@ public class ChatViewModel: ObservableObject {
 
     private func generateSuggestions() {
         Task {
-            do {
-                let prompt = """
-                Based on this news article, generate exactly 3 short curiosity-driven questions a reader might ask. \
-                Each question should be under 10 words. Return ONLY the 3 questions, one per line, no numbering.
-                
-                Article: \(articleContext.title)
-                Content: \(articleContext.displayContent.prefix(300))
-                """
+            let prompt = """
+            You are helping readers of a news app. Given this article, write exactly 3 short questions \
+            (under 10 words each) a curious reader might tap to ask. Output only 3 lines, no numbers or bullets.
 
-                let response = try await callGeminiRaw(prompt: prompt)
+            Title: \(articleContext.title)
+            Summary: \(articleContext.displayContent.prefix(400))
+            """
+
+            do {
+                let response = try await GeminiClient.generateText(prompt: prompt)
                 let lines = response.components(separatedBy: .newlines)
                     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty }
                     .prefix(3)
-
                 self.suggestions = Array(lines)
             } catch {
                 self.suggestions = [
@@ -69,52 +70,22 @@ public class ChatViewModel: ObservableObject {
         }
     }
 
-    private func callGemini(query: String) async throws -> String {
-        let systemPrompt = """
-        You are Layman, a friendly expert who explains complex business and tech news \
-        in simple everyday language. Keep answers to 1-2 sentences max. Be conversational \
-        and casual. No jargon. Context article: "\(articleContext.title)" — \
-        \(articleContext.displayContent.prefix(500))
+    private func answerWithContext(userPrompt: String) async throws -> String {
+        let contextBlock = """
+        Article title: \(articleContext.title)
+        Article link: \(articleContext.link)
+        Body (for context only): \(articleContext.displayContent.prefix(3500))
         """
 
-        let fullPrompt = "\(systemPrompt)\n\nUser question: \(query)"
-        return try await callGeminiRaw(prompt: fullPrompt)
-    }
+        let prompt = """
+        You are Layman — you explain business, tech, and startup news in plain, friendly English like talking to a friend.
+        Rules: 1–2 sentences only. No jargon. If the question is not about this article, say so briefly and still be kind.
 
-    private func callGeminiRaw(prompt: String) async throws -> String {
-        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\(AppSecrets.geminiAPIKey)"
-        guard let url = URL(string: endpoint) else { throw URLError(.badURL) }
+        \(contextBlock)
 
-        let reqBody: [String: Any] = [
-            "contents": [
-                ["role": "user", "parts": [["text": prompt]]]
-            ],
-            "generationConfig": [
-                "temperature": 0.7,
-                "maxOutputTokens": 150
-            ]
-        ]
+        User question: \(userPrompt)
+        """
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: reqBody)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let candidates = json["candidates"] as? [[String: Any]],
-              let firstCandidate = candidates.first,
-              let content = firstCandidate["content"] as? [String: Any],
-              let parts = content["parts"] as? [[String: Any]],
-              let firstPart = parts.first,
-              let text = firstPart["text"] as? String else {
-            throw URLError(.cannotParseResponse)
-        }
-
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return try await GeminiClient.generateText(prompt: prompt)
     }
 }
